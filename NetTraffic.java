@@ -1,15 +1,13 @@
 package nettraffic;
 
-/**
- * Created by Rodney on 10/23/2015.
- */
-
-
 public class NetTraffic {
     public static ProcessPacket pp;
     public static void main (String args[]) {
-        pp = new ProcessPacket();
-        pp.PrintOut();
+        String file = "C:\\Users\\Rodney\\SkyDrive\\School\\CIS 457 Datacom\\NetTraffic\\src\\nettraffic\\sample.pcap"; // May need to be changed to actual filename or pass on cl
+        if (args.length>0)
+            file = args[0];
+        pp = new ProcessPacket(file);
+        pp.ProcessFile();
     }
 
 }
