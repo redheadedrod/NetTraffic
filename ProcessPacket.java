@@ -20,7 +20,8 @@ public class ProcessPacket {
 
     // empty constructor
     public ProcessPacket() {
-        String file = "C:\\Users\\Rodney\\SkyDrive\\School\\CIS 457 Datacom\\NetTraffic\\src\\nettraffic\\sample.pcap";
+        //String file = "C:\\Users\\Rodney\\SkyDrive\\School\\CIS 457 Datacom\\NetTraffic\\src\\nettraffic\\sample.pcap";
+        String file = ".\\src\\nettraffic\\sample.pcap";
         this.packets = ProcessFile(file);
     }
 
@@ -147,7 +148,7 @@ public class ProcessPacket {
                     pairs.add(tempPair);
             }
         }
-        System.out.printf("Out of %d records %d were Ethernet II/IPV4 and of those IPV4 records the following %d address pairs\n", records, ipv4, pairs.size());
+        System.out.printf("\nOut of %d records %d were Ethernet II/IPV4 and of those IPV4 records the following %d address pairs\n", records, ipv4, pairs.size());
         System.out.println("each are responsible for the listed percentage of the total amount of IPV4 records:\n");
         for (int i = 0; i < pairs.size(); i++) {
             temp = pairs.get(i).getCnt();
@@ -158,18 +159,17 @@ public class ProcessPacket {
 
     }
 
-
     /**
-     * Under construction for item #3. Not sure what he is looking for yet
-     * @param tempPacket - Packet we are looking at
-     * @return - return a PacketProtocol object that contains the type and length with a counter of 1
+     * Check the array list to see if the protocal is in it
+     * @param tempProtocol - protocol to check
+     * @param protocols - array list to check within
+     * @return - -1 if not found otherwise the index location
      */
-    private PacketProtocol getProtocol(PcapPacket tempPacket) {
-        PacketProtocol tempProtocol;
-        int type = tempPacket.getByte(23);
-        int bites = tempPacket.getUShort(16);
-        System.out.printf("type = %d  bytes = %d \n", type, bites);  // for testing purposes
-        return new PacketProtocol(type, bites);
+    private int checkProtocol(PacketProtocol tempProtocol, ArrayList<PacketProtocol> protocols) {
+        for (int i = 0; i<protocols.size(); i++)
+            if (protocols.get(i).getType() == tempProtocol.getType())
+                return i;
+        return -1;
     }
 
     /**
@@ -187,6 +187,9 @@ public class ProcessPacket {
         int eth2 = 0;
         int tipe;
         float percent;
+        int temp;
+        // used for part 3 totals
+        int total2Bytes = 0;
         // step through all the records
         for (int i = 0; i < records; i++) {
             // grab a packet from the array list
@@ -198,17 +201,43 @@ public class ProcessPacket {
                 ieee++;
             } else {
                 // working on section 3 here
-                System.out.print(i+" bytes = "+tempPacket.size()+ " ");
-                tempProtocol = getProtocol(tempPacket);
+                tempProtocol = new PacketProtocol(tipe, tempPacket.size());
+                total2Bytes += tempPacket.size();
+                //System.out.printf("%d  bytes = %d  type = 0x%x\n", i, tempProtocol.getBites(), tempProtocol.getType()  ); // remove when done
+                if ( protocols.size() ==0) {
+                    protocols.add(tempProtocol);
+                }
+                else {
+                    temp = checkProtocol(tempProtocol, protocols);
+                    if ( temp >= 0) {
+                        protocols.get(temp).addBites(tempProtocol.getBites());
+                        protocols.get(temp).addCnt(1);
+                    //    System.out.printf("Match found 0x%x now has %d entries with total of %d bytes\n",
+                     //           protocols.get(temp).getType(), protocols.get(temp).getCnt(), protocols.get(temp).getBites());  // remove when done
+                    } else {
+                        protocols.add(tempProtocol);
+                    }
+                }
+
             }
             //System.out.printf("%d Type = %d or 0x%04x \n", i+1, tipe, tipe, tempPacket.getUShort(12));
         }
         // total number of eth2 records
         eth2 = records - ieee;
         // calculate percentage of total
-        percent = (1-((float)ieee/(float)records))*100;
-        System.out.printf("There were %d IEEE 802.e packets and %d Ethernet II packets for a total of %.2f%% using Ethernet II\n\n",
-                ieee, eth2, percent);
+        percent = ((float)ieee/(float)records)*100;
+        System.out.printf("\nThere were %d IEEE 802.e packets for %.2f%% of total packets and %d Ethernet II packets for a total of %.2f%% of total packets.\n",
+                ieee, percent, eth2, 100-percent);
+        System.out.printf("There were a total %d bytes sent using Ethernet II packets and this was split into the following %d protocols:\n\n",
+                total2Bytes, protocols.size());
+        for (int i =0; i < protocols.size(); i++) {
+            percent = ((float)protocols.get(i).getCnt()/eth2) *100;
+            System.out.printf("Protocol 0x%04x had %d packets for a total of %.2f%% of total ethernet II packets containing\n",
+                    protocols.get(i).getType(), protocols.get(i).getCnt(), percent);
+            percent = ((float)protocols.get(i).getBites()/total2Bytes) *100;
+            System.out.printf("     %d total bytes for %.2f%% of total bytes sent by all Ethernet II packets.\n",
+                    protocols.get(i).getBites(),  percent);
+        }
     }
 
 }

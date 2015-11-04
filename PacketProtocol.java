@@ -30,6 +30,7 @@ public class PacketProtocol {
      */
     public PacketProtocol(int type, int bites) {
         cnt =1;
+        initialize(type, bites);
     }
 
     /**
